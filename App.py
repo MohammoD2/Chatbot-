@@ -5,13 +5,17 @@ import os
 # App title
 st.set_page_config(page_title="🤖Personal Chatbot🤖")
 
-# Replicate Credentials
 with st.sidebar:
     st.title('🤖Personal Chatbot🤖')
-    replicate_api = 'r8_CG7zml7YY0WZ8OuCvlkHyYK8iQDNP4a1pnxjL'
-    replicate.Client(api_token=replicate_api) 
-    os.environ['REPLICATE_API_TOKEN'] = replicate_api
-    
+    if 'REPLICATE_API_TOKEN' in st.secrets:
+        replicate_api = st.secrets['REPLICATE_API_TOKEN']
+    else:
+        replicate_api = st.text_input('Enter Replicate API token:', type='password')
+        if not (replicate_api.startswith('r8_') and len(replicate_api)==40):
+            st.warning('Please enter your credentials!', icon='⚠️')
+        else:
+            st.success('Proceed to entering your prompt message!', icon='👉')
+    os.environ['REPLICATE_API_TOKEN'] = replicate_api   
     st.subheader('Models and parameters')
     selected_model = st.sidebar.selectbox('Choose a Llama2 model', ['Llama2-7B', 'Llama2-13B'], key='selected_model')
     if selected_model == 'Llama2-7B':
@@ -48,16 +52,16 @@ def generate_llama2_response(prompt_input):
                                   "temperature":temperature, "top_p":top_p, "max_length":max_length, "repetition_penalty":1})
     return output
 
-# User-provided prompt
+
 if prompt := st.chat_input(disabled=not replicate_api):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.write(prompt)
 
-# Generate a new response if last message is not from assistant
+
 if st.session_state.messages[-1]["role"] != "assistant":
     with st.chat_message("assistant"):
-        with st.spinner("generating..."):
+        with st.spinner("generating🤔..."):
             response = generate_llama2_response(prompt)
             placeholder = st.empty()
             full_response = ''
@@ -67,3 +71,4 @@ if st.session_state.messages[-1]["role"] != "assistant":
             placeholder.markdown(full_response)
     message = {"role": "assistant", "content": full_response}
     st.session_state.messages.append(message)
+
